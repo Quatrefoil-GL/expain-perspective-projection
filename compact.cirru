@@ -6,6 +6,17 @@
   :files $ {}
     |app.comp.container $ {}
       :defs $ {}
+        |calc-unit-x-axis $ quote
+          defn calc-unit-x-axis (p)
+            let[] (a b c) p $ v-scale
+              [] (negate c) 0 a
+              / 1 $ sqrt (sum-squares a c)
+        |calc-unit-y-axis $ quote
+          defn calc-unit-y-axis (p)
+            let[] (a b c) p $ v-scale
+              [] (* -1 a b) (sum-squares a c) (* -1 b c)
+              / 1 $ sqrt
+                sum-squares (* a b) (sum-squares a c) (* b c)
         |comp-container $ quote
           defcomp comp-container (store)
             let
@@ -14,9 +25,54 @@
                 state $ either (:data states)
                   {} $ :tab :portal
                 tab $ :tab state
-              scene ({}) (comp-demo)
+                look-distance $ [] 20 30 -60
+                screen-x $ wo-log (calc-unit-x-axis look-distance)
+                screen-y $ wo-log (calc-unit-y-axis look-distance)
+                s $ noted "\"cone back scale" 0.5
+                targets $ [][] (80 70 -90) (; 50 90 -70)
+                projections $ map targets
+                  fn (p) (transform-3d p look-distance s)
+              scene ({})
                 ambient-light $ {} (:color 0x666666)
-                ; point-light $ {} (:color 0xffffff) (:intensity 1.4) (:distance 200)
+                line-segments $ {}
+                  :segments $ []
+                    [][] (-100 0 0) (100 0 0)
+                    [][] (0 -100 0) (0 100 0)
+                    [][] (0 0 -100) (0 0 100)
+                  :material style-line
+                line $ {}
+                  :points $ [] (v-scale look-distance 5)
+                    v-scale look-distance $ negate s
+                  :material $ assoc style-line :color 0xaaaaff
+                group ({}) & $ map projections
+                  fn (pro)
+                    let
+                        point-on-screen $ let[] (x y) (:shadow pro)
+                          v+ look-distance $ v+ (v-scale screen-x x) (v-scale screen-y y)
+                      group ({})
+                        sphere $ {} (:radius 1) (:material style-point)
+                          :position $ v-scale look-distance (:scale pro)
+                        sphere $ {} (:radius 1)
+                          :material $ assoc style-point :color 0xffffff
+                          :position $ :p0 pro
+                        sphere $ {} (:radius 2) (:material style-point) (:position point-on-screen)
+                        line $ {}
+                          :points $ [] point-on-screen look-distance
+                          :material $ assoc style-line :color 0x555533
+                        line $ {}
+                          :points $ [] (:p0 pro)
+                            v-scale look-distance $ :scale pro
+                          :material $ assoc style-line :color 0x555533
+                        line $ {}
+                          :points $ [] (:p0 pro)
+                            v-scale look-distance $ negate s
+                          :material $ assoc style-line :color 0xaa00cc
+                comp-grid look-distance screen-x screen-y
+                sphere $ {} (:radius 1) (:material style-point)
+                sphere $ {} (:radius 1) (:position look-distance) (:material style-point)
+                sphere $ {} (:radius 1) (:material style-point)
+                  :position $ v-scale look-distance (negate s)
+                point-light $ {} (:color 0xffffff) (:intensity 1.4) (:distance 200)
                   :position $ [] 20 40 50
                 ; point-light $ {} (:color 0xffffff) (:intensity 2) (:distance 200)
                   :position $ [] 0 60 0
@@ -43,10 +99,70 @@
                 :click $ fn (e d!) (d! :canvas nil)
             point-light $ {} (:color 0xffff55) (:intensity 2) (:distance 200)
               :position $ [] -10 20 0
+        |comp-grid $ quote
+          defn comp-grid (look-distance screen-x screen-y)
+            line-segments $ {} (:position look-distance)
+              :segments $ concat
+                map (range -5 6)
+                  fn (i)
+                    []
+                      v+ (v-scale screen-x 50)
+                        v-scale screen-y $ * 10 i
+                      v+ (v-scale screen-x -50)
+                        v-scale screen-y $ * 10 i
+                map (range -5 6)
+                  fn (i)
+                    []
+                      v+ (v-scale screen-y 50)
+                        v-scale screen-x $ * 10 i
+                      v+ (v-scale screen-y -50)
+                        v-scale screen-x $ * 10 i
+              :material $ {} (:kind :line-basic) (:color 0x334466) (:opacity 0.9) (:transparent true)
+        |square $ quote
+          defn square (x) (pow x 2)
+        |style-line $ quote
+          def style-line $ {} (:kind :line-basic) (:color 0x5555aa) (:opacity 0.9) (:transparent true)
+        |style-point $ quote
+          def style-point $ {} (:kind :mesh-lambert) (:color 0x808080) (:opacity 0.9)
+        |sum-squares $ quote
+          defn sum-squares (& xs)
+            -> xs (map square) (reduce 0 &+)
+        |transform-3d $ quote
+          defn transform-3d (point look-distance s)
+            let-sugar
+                  [] x y z
+                  , point
+                ([] a b c) look-distance
+                b $ nth look-distance 1
+                c $ nth look-distance 2
+                r $ /
+                  + (* a x) (* b y) (* c z)
+                  + (square a) (square b) (square c)
+                q $ / (+ s 1) (+ r s)
+                L1 $ sqrt
+                  + (* a a b b)
+                    square $ sum-squares a c
+                    * b b c c
+                y' $ *
+                  /
+                    + (* q y) (* b q s) (* -1 b s) (* -1 b)
+                    sum-squares a c
+                  , L1
+                x' $ *
+                  /
+                    -
+                      + (* q x) (* a q s) (* -1 s a) (* -1 a)
+                      * y' $ / (* -1 a b) L1
+                    , c -1
+                  sqrt $ sum-squares a c
+                z' $ negate r
+              {} (:p0 point) (:scale r)
+                :shadow $ [] x' y' z'
       :ns $ quote
         ns app.comp.container $ :require
-          quatrefoil.alias :refer $ group box sphere point-light ambient-light perspective-camera scene text
+          quatrefoil.alias :refer $ group box sphere point-light ambient-light perspective-camera scene text line line-segments
           quatrefoil.core :refer $ defcomp >>
+          quatrefoil.math :refer $ v-scale v+ v-
     |app.config $ {}
       :defs $ {}
         |dev? $ quote
