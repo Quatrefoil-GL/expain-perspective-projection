@@ -43,35 +43,27 @@
                 line $ {}
                   :points $ [] (v-scale look-distance 5)
                     v-scale look-distance $ negate s
-                  :material $ assoc style-line :color 0xaaaaff
-                group ({}) & $ map projections
-                  fn (pro)
-                    let
-                        point-on-screen $ let[] (x y) (:shadow pro)
-                          v+ look-distance $ v+ (v-scale screen-x x) (v-scale screen-y y)
-                      group ({})
-                        sphere $ {} (:radius 1) (:material style-point)
-                          :position $ v-scale look-distance (:scale pro)
-                        sphere $ {} (:radius 1)
-                          :material $ assoc style-point :color 0xffffff
-                          :position $ :p0 pro
-                        sphere $ {} (:radius 2) (:material style-point) (:position point-on-screen)
-                        line $ {}
-                          :points $ [] point-on-screen look-distance
-                          :material $ assoc style-line :color 0x555533
-                        line $ {}
-                          :points $ [] (:p0 pro)
-                            v-scale look-distance $ :scale pro
-                          :material $ assoc style-line :color 0x555533
-                        line $ {}
-                          :points $ [] (:p0 pro)
-                            v-scale look-distance $ negate s
-                          :material $ assoc style-line :color 0xaa00cc
+                  :material $ assoc style-line :color 0xaaaaee
+                group ({}) & $ map-indexed projections
+                  fn (idx pro) (comp-point-explain idx pro look-distance screen-x screen-y s)
                 comp-grid look-distance screen-x screen-y
-                sphere $ {} (:radius 1) (:material style-point)
-                sphere $ {} (:radius 1) (:position look-distance) (:material style-point)
-                sphere $ {} (:radius 1) (:material style-point)
-                  :position $ v-scale look-distance (negate s)
+                group ({})
+                  sphere $ {} (:radius 1) (:material style-point)
+                  text $ {} (:text |O) (:material style-point) (:size 0.8) (:height 0.5)
+                    :position $ [] 1 0 1
+                group ({})
+                  sphere $ {} (:radius 1) (:position look-distance)
+                    :material $ assoc style-point :color 0xffffaa
+                  text $ {} (:text |C) (:size 0.8) (:height 0.5)
+                    :material $ assoc style-point :color 0xffffaa
+                    :position $ v+ look-distance ([] 1 0 1)
+                group ({})
+                  sphere $ {} (:radius 1) (:material style-point)
+                    :position $ v-scale look-distance (negate s)
+                  text $ {} (:text |S) (:material style-point) (:size 0.8) (:height 0.5)
+                    :position $ v+
+                      v-scale look-distance $ negate s
+                      [] 1 0 1
                 point-light $ {} (:color 0xffffff) (:intensity 1.4) (:distance 200)
                   :position $ [] 20 40 50
                 ; point-light $ {} (:color 0xffffff) (:intensity 2) (:distance 200)
@@ -101,25 +93,90 @@
               :position $ [] -10 20 0
         |comp-grid $ quote
           defn comp-grid (look-distance screen-x screen-y)
-            line-segments $ {} (:position look-distance)
-              :segments $ concat
-                map (range -5 6)
-                  fn (i)
-                    []
-                      v+ (v-scale screen-x 50)
-                        v-scale screen-y $ * 10 i
-                      v+ (v-scale screen-x -50)
-                        v-scale screen-y $ * 10 i
-                map (range -5 6)
-                  fn (i)
-                    []
-                      v+ (v-scale screen-y 50)
-                        v-scale screen-x $ * 10 i
-                      v+ (v-scale screen-y -50)
-                        v-scale screen-x $ * 10 i
-              :material $ {} (:kind :line-basic) (:color 0x334466) (:opacity 0.9) (:transparent true)
+            group ({})
+              line-segments $ {} (:position look-distance)
+                :segments $ concat
+                  map (range -5 6)
+                    fn (i)
+                      []
+                        v+ (v-scale screen-x 50)
+                          v-scale screen-y $ * 10 i
+                        v+ (v-scale screen-x -50)
+                          v-scale screen-y $ * 10 i
+                  map (range -5 6)
+                    fn (i)
+                      []
+                        v+ (v-scale screen-y 50)
+                          v-scale screen-x $ * 10 i
+                        v+ (v-scale screen-y -50)
+                          v-scale screen-x $ * 10 i
+                :material $ {} (:kind :line-basic) (:color 0x334466) (:opacity 0.9) (:transparent true)
+              ; line-segments $ {} (:position look-distance)
+                :segments $ []
+                  []
+                    v+ (v-scale screen-y -18) (v-scale screen-x 32)
+                    v+ (v-scale screen-y 18) (v-scale screen-x 32)
+                  []
+                    v+ (v-scale screen-y -18) (v-scale screen-x -32)
+                    v+ (v-scale screen-y 18) (v-scale screen-x -32)
+                  []
+                    v+ (v-scale screen-y -18) (v-scale screen-x 32)
+                    v+ (v-scale screen-y -18) (v-scale screen-x -32)
+                  []
+                    v+ (v-scale screen-y 18) (v-scale screen-x 32)
+                    v+ (v-scale screen-y 18) (v-scale screen-x -32)
+                :material $ {} (:kind :line-basic) (:color 0x7788aa) (:opacity 0.9) (:transparent true)
+        |comp-point-explain $ quote
+          defn comp-point-explain (idx pro look-distance screen-x screen-y s)
+            let
+                point-on-screen $ let[] (x y) (:shadow pro)
+                  v+ look-distance $ v+ (v-scale screen-x x) (v-scale screen-y y)
+                screen-near $ v+ look-distance
+                  v-scale screen-x $ :x pro
+              group ({})
+                sphere $ {} (:radius 1) (:material style-point)
+                  :position $ v-scale look-distance (:scale pro)
+                text $ {} (:material style-point) (:size 1.2) (:height 0.5)
+                  :text $ str "\"Q " idx
+                  :position $ v+
+                    v-scale look-distance $ :scale pro
+                    [] 2 0 1
+                sphere $ {} (:radius 1)
+                  :material $ assoc style-point :color 0xffffff
+                  :position $ :p0 pro
+                text $ {} (:material style-point) (:size 1.2) (:height 0.5)
+                  :text $ str "\"P " idx
+                  :position $ v+ (:p0 pro) ([] 2 0 1)
+                sphere $ {} (:radius 2) (:material style-point) (:position point-on-screen)
+                text $ {} (:material style-point) (:size 1.2) (:height 0.5)
+                  :text $ str "\"P' " idx
+                  :position $ v+ point-on-screen ([] 2 0 1)
+                line $ {}
+                  :points $ [] point-on-screen look-distance
+                  :material $ assoc style-line :color 0x555533
+                line $ {}
+                  :points $ [] (:p0 pro)
+                    v-scale look-distance $ :scale pro
+                  :material $ assoc style-line :color 0x555533
+                line $ {}
+                  :points $ [] (:p0 pro)
+                    v-scale look-distance $ negate s
+                  :material $ assoc style-line :color 0xeeaaff
+                group ({})
+                  mesh-line $ {}
+                    :points $ [] look-distance screen-near
+                    :material style-bold-line
+                  sphere $ {} (:radius 1) (:material style-point) (:position screen-near)
+                  text $ {} (:material style-point) (:size 0.8) (:height 0.5)
+                    :text $ str "\"B " idx
+                    :position $ v+ screen-near ([] 1 0 1)
+                  mesh-line $ {}
+                    :points $ [] point-on-screen screen-near
+                    :material style-bold-line
         |square $ quote
           defn square (x) (pow x 2)
+        |style-bold-line $ quote
+          def style-bold-line $ {} (:kind :mesh-line) (:color 0xaaaaff) (:transparent true) (:opacity 0.6) (:depthTest true) (:lineWidth 0.3)
         |style-line $ quote
           def style-line $ {} (:kind :line-basic) (:color 0x5555aa) (:opacity 0.9) (:transparent true)
         |style-point $ quote
@@ -158,9 +215,11 @@
                 z' $ negate r
               {} (:p0 point) (:scale r)
                 :shadow $ [] x' y' z'
+                :x x'
+                :y y'
       :ns $ quote
         ns app.comp.container $ :require
-          quatrefoil.alias :refer $ group box sphere point-light ambient-light perspective-camera scene text line line-segments
+          quatrefoil.alias :refer $ group box sphere point-light ambient-light perspective-camera scene text line line-segments mesh-line
           quatrefoil.core :refer $ defcomp >>
           quatrefoil.math :refer $ v-scale v+ v-
     |app.config $ {}
