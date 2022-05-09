@@ -31,3 +31,11 @@ body * {
 ::-webkit-resizer {
   background-color:transparent;
 }
+
+.md-code-block {
+  font-size: 12px;
+  background-color: hsla(0, 0%, 86%, 0.9);
+  border: 1px solid #ccc;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
